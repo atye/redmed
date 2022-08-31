@@ -349,10 +349,6 @@ type wsResponse struct {
 }
 
 func (c *reddit) waitForPostSuccess(ctx context.Context, url string) (string, error) {
-	if url == "" {
-		return "", nil
-	}
-
 	ws, _, err := c.dialer.Dial(url, nil)
 	if err != nil {
 		return "", fmt.Errorf("dialing websocket connection: %w", err)

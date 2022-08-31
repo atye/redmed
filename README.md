@@ -1,6 +1,6 @@
 # redmed
 
-`redmed` is a **red**it API wrapper for posting **med**ia submissions.
+`redmed` is a **red**it API wrapper for posting **med**ia (image, video, videogif) submissions.
 
 ## Why?
 Existing Reddit API clients, such as [go-reddit](https://github.com/vartanbeno/go-reddit), only support link and self posts. 

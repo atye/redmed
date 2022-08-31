@@ -152,4 +152,4 @@ if err != nil {
 ```
 </details>
 
-The `name` returned is the *fullname* of the post, such as `t3_x2dx7f`. 
+The `name` returned from submitting posts is the *fullname* of the post, such as `t3_x2dx7f`. 

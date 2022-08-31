@@ -17,7 +17,7 @@ func main() {
 	req := redmed.PostVideoRequest{
 		Kind:          "video",
 		NSWF:          false,
-		Path:          "https://i.imgur.com/DjkIbsM.mp4",
+		VideoPath:     "https://i.imgur.com/DjkIbsM.mp4",
 		Resubmit:      true,
 		SendReplies:   true,
 		Spoiler:       false,
@@ -37,7 +37,7 @@ func main() {
 	req = redmed.PostVideoRequest{
 		Kind:          "video",
 		NSWF:          false,
-		Path:          "/mnt/c/Users/aty3/video.mp4",
+		VideoPath:     "/mnt/c/Users/aty3/video.mp4",
 		Resubmit:      true,
 		SendReplies:   true,
 		Spoiler:       false,
@@ -94,7 +94,7 @@ func main() {
 		SendReplies: true,
 		Spoiler:     false,
 		Subreddit:   "mmafakenews",
-		Title:       "galler from local path and link",
+		Title:       "gallery from local path and link",
 	}
 	name, err = reddit.PostGallery(context.Background(), galReq)
 	if err != nil {

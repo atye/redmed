@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -24,6 +25,12 @@ type Option func(*client)
 func WithHTTPClient(httpClient *http.Client) Option {
 	return func(c *client) {
 		c.reddit.setHTTPClient(httpClient)
+	}
+}
+
+func WithWebsocketDialer(dialer *websocket.Dialer) Option {
+	return func(c *client) {
+		c.reddit.setWebsocketDialer(dialer)
 	}
 }
 

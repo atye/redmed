@@ -18,12 +18,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
+var (
 	tokenURL = "https://www.reddit.com/api/v1/access_token"
 	baseURL  = "https://oauth.reddit.com"
-)
 
-var (
 	mimeTypes = map[string]string{
 		".png":  "image/png",
 		".mov":  "video/quicktime",
@@ -31,6 +29,13 @@ var (
 		".jpg":  "image/jpeg",
 		".jpeg": "image/jpeg",
 		".gif":  "image/gif",
+	}
+
+	imageMimeTypes = map[string]struct{}{
+		".png":  struct{}{},
+		".jpg":  struct{}{},
+		".jpeg": struct{}{},
+		".gif":  struct{}{},
 	}
 )
 
@@ -41,6 +46,7 @@ type reddit struct {
 	password    string
 	userAgent   string
 	client      *http.Client
+	dialer      *websocket.Dialer
 	accessToken string
 }
 
@@ -49,14 +55,19 @@ func newReddit(userAgent, clientID, secret, username, password string) *reddit {
 		userAgent: userAgent,
 		clientID:  clientID,
 		secret:    secret,
-		client:    http.DefaultClient,
 		username:  username,
 		password:  password,
+		client:    http.DefaultClient,
+		dialer:    websocket.DefaultDialer,
 	}
 }
 
 func (c *reddit) setHTTPClient(client *http.Client) {
 	c.client = client
+}
+
+func (c *reddit) setWebsocketDialer(dialer *websocket.Dialer) {
+	c.dialer = dialer
 }
 
 type asset struct {
@@ -118,7 +129,7 @@ func (c *reddit) UploadAsset(ctx context.Context, path string) (asset, error) {
 	r.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.accessToken))
 
 	var ar assetLeaseResponse
-	_, err = c.doRequest(r, "", &ar)
+	_, err = c.doRequest(r, "", json.Unmarshal, &ar)
 	if err != nil {
 		return asset{}, err
 	}
@@ -169,19 +180,18 @@ func (c *reddit) UploadAsset(ctx context.Context, path string) (asset, error) {
 		return asset{}, err
 	}
 
-	respBody, err := c.doRequest(r, form.FormDataContentType(), nil)
-	if err != nil {
-		return asset{}, err
-	}
-
 	type postResponse struct {
 		Location string `xml:"Location"`
 	}
 
 	var pr postResponse
-	err = xml.Unmarshal(respBody, &pr)
+	respBody, err := c.doRequest(r, form.FormDataContentType(), xml.Unmarshal, &pr)
 	if err != nil {
 		return asset{}, err
+	}
+
+	if pr.Location == "" {
+		return asset{}, fmt.Errorf("uploading asset to lease: %w", fmt.Errorf(string(respBody)))
 	}
 
 	return asset{
@@ -198,12 +208,12 @@ func (c *reddit) SubmitPost(ctx context.Context, websocketURL string, body io.Re
 	}
 	r.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.accessToken))
 
-	_, err = c.doRequest(r, "", nil)
+	_, err = c.doRequest(r, "", nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("executing submission request: %w", err)
 	}
 
-	redirect, err := waitForPostSuccess(ctx, websocketURL)
+	redirect, err := c.waitForPostSuccess(ctx, websocketURL)
 	if err != nil {
 		return "", fmt.Errorf("waiting for post success: %w", err)
 	}
@@ -213,6 +223,16 @@ func (c *reddit) SubmitPost(ctx context.Context, websocketURL string, body io.Re
 	return fmt.Sprintf("t3_%s", split[len(split)-3]), nil
 }
 
+type postGalleryResponse struct {
+	JSON struct {
+		Errors []interface{} `json:"errors"`
+		Data   struct {
+			URL string `json:"url"`
+			ID  string `json:"id"`
+		} `json:"data"`
+	} `json:"json"`
+}
+
 func (c *reddit) SubmitGalleryPost(ctx context.Context, body io.Reader) (string, error) {
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/api/submit_gallery_post.json", baseURL), body)
 	if err != nil {
@@ -220,18 +240,8 @@ func (c *reddit) SubmitGalleryPost(ctx context.Context, body io.Reader) (string,
 	}
 	r.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.accessToken))
 
-	type postGalleryResponse struct {
-		JSON struct {
-			Errors []interface{} `json:"errors"`
-			Data   struct {
-				URL string `json:"url"`
-				ID  string `json:"id"`
-			} `json:"data"`
-		} `json:"json"`
-	}
-
 	var pgr postGalleryResponse
-	respBody, err := c.doRequest(r, "application/json", &pgr)
+	respBody, err := c.doRequest(r, "application/json", json.Unmarshal, &pgr)
 	if err != nil {
 		return "", fmt.Errorf("executing submission request: %w", err)
 	}
@@ -282,7 +292,7 @@ func (c *reddit) SetToken(ctx context.Context) error {
 	return nil
 }
 
-func (c *reddit) doRequest(r *http.Request, contentType string, v interface{}) ([]byte, error) {
+func (c *reddit) doRequest(r *http.Request, contentType string, unmarshal func([]byte, interface{}) error, v interface{}) ([]byte, error) {
 	r.Header.Set("User-Agent", c.userAgent)
 
 	cType := "application/x-www-form-urlencoded"
@@ -308,7 +318,7 @@ func (c *reddit) doRequest(r *http.Request, contentType string, v interface{}) (
 	}
 
 	if v != nil {
-		err = json.Unmarshal(respBytes, &v)
+		err = unmarshal(respBytes, &v)
 		if err != nil {
 			return nil, fmt.Errorf("unmarshalling %s: %v", string(respBytes), err)
 		}
@@ -347,12 +357,19 @@ func downloadLink(ctx context.Context, client *http.Client, link string) (string
 	return file.Name(), nil
 }
 
-func waitForPostSuccess(ctx context.Context, url string) (string, error) {
+type wsResponse struct {
+	Type    string `json:"type"`
+	Payload struct {
+		Redirect string `json:"redirect"`
+	} `json:"payload"`
+}
+
+func (c *reddit) waitForPostSuccess(ctx context.Context, url string) (string, error) {
 	if url == "" {
 		return "", nil
 	}
 
-	ws, _, err := websocket.DefaultDialer.Dial(url, nil)
+	ws, _, err := c.dialer.Dial(url, nil)
 	if err != nil {
 		return "", fmt.Errorf("dialing websocket connection: %w", err)
 	}
@@ -371,17 +388,12 @@ func waitForPostSuccess(ctx context.Context, url string) (string, error) {
 			if ctx.Err() != nil {
 				return
 			}
+
+			// what if message never comes?
 			_, message, err := ws.ReadMessage()
 			if err != nil {
 				msgCh <- msg{err: fmt.Errorf("reading websocket message: %w", err)}
 				return
-			}
-
-			type wsResponse struct {
-				Type    string `json:"type"`
-				Payload struct {
-					Redirect string `json:"redirect"`
-				} `json:"payload"`
 			}
 
 			var wr wsResponse
@@ -391,7 +403,7 @@ func waitForPostSuccess(ctx context.Context, url string) (string, error) {
 				return
 			}
 
-			if wr.Type == "failed" || wr.Payload.Redirect == "" {
+			if wr.Type != "success" || wr.Payload.Redirect == "" {
 				msgCh <- msg{err: fmt.Errorf("waiting for media upload success: %w", fmt.Errorf(string(message)))}
 				return
 			}

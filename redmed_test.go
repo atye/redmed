@@ -68,9 +68,7 @@ func TestPostImage(t *testing.T) {
 			redditSvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
 				case "/api/v1/access_token":
-					resp := map[string]interface{}{
-						"access_token": "token",
-					}
+					resp := token{AccessToken: "token"}
 					b, err := json.Marshal(resp)
 					if err != nil {
 						t.Fatal(err)
@@ -216,9 +214,7 @@ func TestPostImage(t *testing.T) {
 			redditSvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
 				case "/api/v1/access_token":
-					resp := map[string]interface{}{
-						"access_token": "token",
-					}
+					resp := token{AccessToken: "token"}
 					b, err := json.Marshal(resp)
 					if err != nil {
 						t.Fatal(err)
@@ -355,9 +351,7 @@ func TestPostVideo(t *testing.T) {
 			redditSvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
 				case "/api/v1/access_token":
-					resp := map[string]interface{}{
-						"access_token": "token",
-					}
+					resp := token{AccessToken: "token"}
 					b, err := json.Marshal(resp)
 					if err != nil {
 						t.Fatal(err)
@@ -505,9 +499,7 @@ func TestPostVideo(t *testing.T) {
 			redditSvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
 				case "/api/v1/access_token":
-					resp := map[string]interface{}{
-						"access_token": "token",
-					}
+					resp := token{AccessToken: "token"}
 					b, err := json.Marshal(resp)
 					if err != nil {
 						t.Fatal(err)
@@ -627,9 +619,7 @@ func TestPostGallery(t *testing.T) {
 		redditSvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
 			case "/api/v1/access_token":
-				resp := map[string]interface{}{
-					"access_token": "token",
-				}
+				resp := token{AccessToken: "token"}
 				b, err := json.Marshal(resp)
 				if err != nil {
 					t.Fatal(err)

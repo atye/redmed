@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -246,6 +245,10 @@ func (c *reddit) SubmitGalleryPost(ctx context.Context, body io.Reader) (string,
 	return pgr.JSON.Data.ID, nil
 }
 
+type token struct {
+	AccessToken string `json:"access_token"`
+}
+
 func (c *reddit) SetToken(ctx context.Context) error {
 	form := url.Values{
 		"grant_type": []string{"password"},
@@ -257,28 +260,16 @@ func (c *reddit) SetToken(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	req.Header.Set("User-Agent", c.userAgent)
 	req.SetBasicAuth(c.clientID, c.secret)
 
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	type token struct {
-		AccessToken string `json:"access_token"`
-	}
-
 	var t token
-	err = json.NewDecoder(resp.Body).Decode(&t)
+	respBody, err := c.doRequest(req, "", json.Unmarshal, &t)
 	if err != nil {
 		return err
 	}
 
 	if t.AccessToken == "" {
-		return errors.New("no token in response")
+		return fmt.Errorf("no token in response: %w", fmt.Errorf(string(respBody)))
 	}
 
 	c.accessToken = t.AccessToken

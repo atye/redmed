@@ -30,13 +30,6 @@ var (
 		".jpeg": "image/jpeg",
 		".gif":  "image/gif",
 	}
-
-	imageMimeTypes = map[string]struct{}{
-		".png":  struct{}{},
-		".jpg":  struct{}{},
-		".jpeg": struct{}{},
-		".gif":  struct{}{},
-	}
 )
 
 type reddit struct {

@@ -99,7 +99,7 @@ if err != nil {
 ```
 </details>
 
-### Post a Video
+### Post a video
 
 Supported image types:
 

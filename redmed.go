@@ -118,11 +118,11 @@ type PostVideoRequest struct {
 
 func (c *client) PostVideo(ctx context.Context, req PostVideoRequest) (string, error) {
 	if req.VideoPath == "" {
-		return "", fmt.Errorf("must proivde a local path or link to a video")
+		return "", fmt.Errorf("must provide a local path or link to video")
 	}
 
 	if req.ThumbnailPath == "" {
-		return "", fmt.Errorf("must provide a local path or link to thumbnail")
+		return "", fmt.Errorf("must provide a local path or link to thumbnail image")
 	}
 
 	if req.Kind != "video" && req.Kind != "videogif" {
@@ -184,7 +184,7 @@ type PostGalleryRequest struct {
 
 func (c *client) PostGallery(ctx context.Context, req PostGalleryRequest) (string, error) {
 	if len(req.Paths) == 0 {
-		return "", fmt.Errorf("must proivde local paths or links to images")
+		return "", fmt.Errorf("must provide local paths or links to images")
 	}
 
 	err := c.reddit.SetToken(ctx)

@@ -7,26 +7,30 @@ import (
 	"github.com/atye/redmed"
 )
 
-// "/mnt/c/Users/aty3/video.mp4"
-// "/mnt/c/Users/aty3/testimg.jpeg"
-// "https://i.imgur.com/E1pzamp.jpeg"
-
 func main() {
-	reddit := redmed.New("script:mmafakenews:v0.0.1 (by /u/mmafakenews)", "KR2RECD7RXYLxbwUnKIkWQ", "G2yr6R8ior3LefkwrnX5wGFuolgjfA", "mmafakenews", "4wX_c8ANF@8/!z2")
+	var (
+		userAgent = "ChangeMeClient/0.1 by YourUsername"
+		clientID  = "ChangeMeClientID"
+		secret    = "ChangeMeSecret"
+		username  = "ChangeMeUsername"
+		password  = "ChangeMEPassword"
 
-	req := redmed.PostVideoRequest{
-		Kind:          "video",
-		NSWF:          false,
-		VideoPath:     "https://i.imgur.com/DjkIbsM.mp4",
-		Resubmit:      true,
-		SendReplies:   true,
-		Spoiler:       false,
-		Subreddit:     "mmafakenews",
-		Title:         "video from link",
-		ThumbnailPath: "https://i.imgur.com/E1pzamp.jpeg",
+		subreddit = "changeme"
+	)
+
+	reddit := redmed.New(userAgent, clientID, secret, username, password)
+
+	// post .png, .jpg, .jpeg, or .gif image from local path
+	imgReq := redmed.PostImageRequest{
+		NSWF:        false,
+		Path:        "/path/to/image.jpeg", // change me
+		Resubmit:    true,
+		SendReplies: true,
+		Spoiler:     false,
+		Subreddit:   subreddit,
+		Title:       "image from local path",
 	}
-
-	name, err := reddit.PostVideo(context.Background(), req)
+	name, err := reddit.PostImage(context.Background(), imgReq)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -34,16 +38,54 @@ func main() {
 
 	fmt.Println(name)
 
-	req = redmed.PostVideoRequest{
-		Kind:          "video",
+	// post .png, .jpg, .jpeg, or .gif image from link
+	imgReq = redmed.PostImageRequest{
+		NSWF:        false,
+		Path:        "https://host.com/image.jpeg", // change me
+		Resubmit:    true,
+		SendReplies: true,
+		Spoiler:     false,
+		Subreddit:   subreddit,
+		Title:       "image from link",
+	}
+
+	name, err = reddit.PostImage(context.Background(), imgReq)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(name)
+
+	// post gallery of .png, .jpg, .jpeg, or .gif images from local paths and/or links
+	galReq := redmed.PostGalleryRequest{
+		NSWF:        false,
+		Paths:       []string{"/path/to/image.jpeg", "https://host.com/image.jpeg"}, // change me
+		SendReplies: true,
+		Spoiler:     false,
+		Subreddit:   subreddit,
+		Title:       "gallery from local path and link",
+	}
+	name, err = reddit.PostGallery(context.Background(), galReq)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(name)
+
+	// post .mp4 or .mov video from link
+	// must provide image ThumbnailPath (local path or link)
+	req := redmed.PostVideoRequest{
+		Kind:          "video", // or videogif
 		NSWF:          false,
-		VideoPath:     "/mnt/c/Users/aty3/video.mp4",
+		VideoPath:     "https://host.com/somevideo.mp4", // change me
 		Resubmit:      true,
 		SendReplies:   true,
 		Spoiler:       false,
-		Subreddit:     "mmafakenews",
-		Title:         "video from local path",
-		ThumbnailPath: "https://i.imgur.com/E1pzamp.jpeg",
+		Subreddit:     subreddit,
+		Title:         "video from link",
+		ThumbnailPath: "https://host.com/image.jpeg", // change me
 	}
 
 	name, err = reddit.PostVideo(context.Background(), req)
@@ -54,49 +96,21 @@ func main() {
 
 	fmt.Println(name)
 
-	imgReq := redmed.PostImageRequest{
-		NSWF:        false,
-		Path:        "/mnt/c/Users/aty3/testimg.jpeg",
-		Resubmit:    true,
-		SendReplies: true,
-		Spoiler:     false,
-		Subreddit:   "mmafakenews",
-		Title:       "image from local path",
-	}
-	name, err = reddit.PostImage(context.Background(), imgReq)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println(name)
-
-	imgReq = redmed.PostImageRequest{
-		NSWF:        false,
-		Path:        "https://i.imgur.com/E1pzamp.jpeg",
-		Resubmit:    true,
-		SendReplies: true,
-		Spoiler:     false,
-		Subreddit:   "mmafakenews",
-		Title:       "image from link",
-	}
-	name, err = reddit.PostImage(context.Background(), imgReq)
-	if err != nil {
-		fmt.Println(err)
-		return
+	// post .mp4 or .mov video from local path
+	// must provide image ThumbnailPath (local path or link)
+	req = redmed.PostVideoRequest{
+		Kind:          "video",
+		NSWF:          false,
+		VideoPath:     "/path/to/video.mp4", // change me
+		Resubmit:      true,
+		SendReplies:   true,
+		Spoiler:       false,
+		Subreddit:     subreddit,
+		Title:         "video from local path",
+		ThumbnailPath: "https://host.com/image.jpeg", // change me
 	}
 
-	fmt.Println(name)
-
-	galReq := redmed.PostGalleryRequest{
-		NSWF:        false,
-		Paths:       []string{"/mnt/c/Users/aty3/testimg.jpeg", "https://i.imgur.com/E1pzamp.jpeg"},
-		SendReplies: true,
-		Spoiler:     false,
-		Subreddit:   "mmafakenews",
-		Title:       "gallery from local path and link",
-	}
-	name, err = reddit.PostGallery(context.Background(), galReq)
+	name, err = reddit.PostVideo(context.Background(), req)
 	if err != nil {
 		fmt.Println(err)
 		return
